@@ -42,7 +42,6 @@ Show[ListPlot[{data1, data2},
  ContourPlot[
   k == MFCriticalDegree[R, r, f, \[CapitalLambda]], {k, 1, 
    30}, {y, -0.5, 7}, ContourStyle -> Dashed]]
-Export["meanfailuresER.eps", %]
 
 
 
@@ -59,4 +58,3 @@ Show[ListPlot[{data3, data4},
  ContourPlot[
   k == MFCriticalDegree[R, r, f, \[CapitalLambda]], {k, 1, 
    30}, {y, -0.5, 7}, ContourStyle -> Dashed]]
-Export["meanfailuresBA.eps", %]
