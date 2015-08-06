@@ -1,0 +1,62 @@
+Parameters
+
+S = 1;
+a = 1;
+nbanks = 100;
+
+\[Beta] = .5;
+
+f = 0.5;
+\[CapitalLambda] = .03;
+R = 1.02;
+r = 1.01;
+
+Main plot
+
+pop = 10^4;
+data1 = Table[{z, 
+    NumberFailures[R, S, a, r, f, \[CapitalLambda], ER, nbanks, z, 
+     pop]}, {z, 1, 30, 1}];
+data2 = Table[{z, 
+    MFsolution[R, r, f, \[CapitalLambda], ER, nbanks, z]}, {z, 1, 30, 
+    1}];
+data3 = Table[{z, 
+    NumberFailures[R, S, a, r, f, \[CapitalLambda], BA, nbanks, z, 
+     pop]}, {z, 2, 30, 2}];
+data4 = Table[{z, 
+    MFsolution[R, r, f, \[CapitalLambda], BA, nbanks, z]}, {z, 2, 30, 
+    2}];
+
+"dataER.csv"
+
+Show[ListPlot[{data1, data2}, 
+  PlotLegends -> 
+   Placed[{Style["Numerics", 14], Style["Theory", 14]}, {0.8, 0.8}], 
+  Frame -> True, 
+  FrameLabel -> {{Style[
+      "Mean number of failures" \[LeftAngleBracket]F\
+\[RightAngleBracket], 16], None}, {Style["Mean degree" z, 16], 
+     Style[HoldForm[Erdös - Rényi networks (N = 100)], 16]}}, 
+  PlotMarkers -> {\[FilledSmallCircle], \[EmptyCircle]}, 
+  PlotRange -> {-0.5, 7}], 
+ ContourPlot[
+  k == MFCriticalDegree[R, r, f, \[CapitalLambda]], {k, 1, 
+   30}, {y, -0.5, 7}, ContourStyle -> Dashed]]
+Export["meanfailuresER.eps", %]
+
+
+
+Show[ListPlot[{data3, data4}, 
+  PlotLegends -> 
+   Placed[{Style["Numerics", 14], Style["Theory", 14]}, {0.8, 0.8}], 
+  Frame -> True, 
+  FrameLabel -> {{Style[
+      "Mean number of failures" \[LeftAngleBracket]F\
+\[RightAngleBracket], 16], None}, {Style["Mean degree" z, 16], 
+     Style[HoldForm[Barabási - Albert networks (N = 100)], 16]}}, 
+  PlotMarkers -> {\[FilledSmallCircle], \[EmptyCircle]}, 
+  PlotRange -> {-0.5, 7}], 
+ ContourPlot[
+  k == MFCriticalDegree[R, r, f, \[CapitalLambda]], {k, 1, 
+   30}, {y, -0.5, 7}, ContourStyle -> Dashed]]
+Export["meanfailuresBA.eps", %]
