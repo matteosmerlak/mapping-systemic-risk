@@ -1,0 +1,134 @@
+Evaluate debt and return
+
+The capital as the sum of the lines of a matrix.
+
+Loans[matrix_] := Total[matrix]
+
+The claims as the sum of the columns of a matrix.
+
+Borrowings[matrix_] := Total[matrix, {2}]
+
+
+
+Constructing lending matrices from them, with entries l_ij = amount of capital borrowed by bank j from bank i.
+
+
+LendingMatrices[type_, nbanks_, z_, \[Beta]_, pop_] :=
+ 
+ With[{nets = Networks[type, nbanks, z, \[Beta], pop]}, 
+  N[AdjacencyMatrix /@ nets]
+  ]
+
+
+
+Assets and liabilities.
+
+Assets[f_, matrix_] := Loans[matrix]/(1 - f)
+Liab[f_, \[CapitalLambda]_, matrix_] := (1 - \[CapitalLambda])/(1 - f)
+   Loans[matrix]
+SeniorLiab[f_, \[CapitalLambda]_, 
+  matrix_] := (1 - \[CapitalLambda])/(1 - f) Loans[matrix] - Borrowings[matrix]
+
+ROI[R_, f_, \[CapitalLambda]_, 
+  matrix_] := (R - 1) Table[
+   Max[Liab[f, \[CapitalLambda], matrix][[i]], Borrowings[matrix][[i]]], {i, 
+    Dimensions[matrix][[1]]}]
+
+
+
+Obligations of a single bank with IB return r.
+
+Obligations[r_, matrix_] := r*matrix
+
+
+
+Total obligation of single banks.
+
+
+TotalObligations[r_, matrix_] := r*Borrowings[matrix]
+
+
+Fractions of obligations a single bank with IB return r.
+
+
+Fractions[r_, matrix_] := 
+ Obligations[r, matrix]/With[{TO = TotalObligations[r, matrix]},
+   Table[If[TO[[i]] > 0, TO[[i]], 1], {i, Dimensions[TO][[1]]}]]
+
+
+Usable for repayment.
+
+
+e[R_, f_, \[CapitalLambda]_, matrix_] := 
+ ROI[R, f, \[CapitalLambda], matrix] + f Assets[f, matrix] - 
+  SeniorLiab[f, \[CapitalLambda], matrix]
+
+
+
+
+The mapping for the fixed point equation.
+
+\[CapitalPhi][x_, Q_, e_, y_] := With[{QQ = Transpose@Q, ee = e, yy = y},
+  Table[Max[Min[(QQ.x)[[i]] + ee[[i]], yy[[i]]], 0], {i, 
+    Dimensions[QQ][[1]]}]
+  ]
+
+
+
+
+Its solution.
+
+FixedPointSol[Q_, e_, y_] := FixedPoint[\[CapitalPhi][#, Q, e, y] &, y]
+
+
+
+The repayments.
+
+Repayed[R_, r_, f_, \[CapitalLambda]_, matrix_] := 
+ Fractions[r, matrix]*
+  FixedPointSol[Fractions[r, matrix], e[R, f, \[CapitalLambda], matrix], 
+   TotalObligations[r, matrix]]
+
+Computing the balances of the banks.
+
+NetWorth[R_, r_, f_, \[CapitalLambda]_, matrix_] := 
+ Chop[e[R, f, \[CapitalLambda], matrix] + 
+   Total[Repayed[R, r, f, \[CapitalLambda], matrix], {1}] - 
+   Total[Repayed[R, r, f, \[CapitalLambda], matrix], {2}]]
+
+
+
+ And the number of failures, by counting the number of nonpositive balances.
+
+Failures[R_, r_, f_, \[CapitalLambda]_, matrix_] := 
+ Count[NetWorth[R, r, f, \[CapitalLambda], matrix], _?NonPositive] - 
+  Count[Total[matrix, {1}], _?NonPositive] - 1
+
+Shock the networks
+
+Pick a banks to shock.
+
+Shock[rates_, S_, a_] := 
+ If[type === bethe, ReplacePart[rates, Table[1 -> (1 - S)*Mean[rates], {a}]], 
+  ReplacePart[rates, 
+   Table[RandomInteger[{1, Length@rates}] -> (1 - S)*Mean[rates], {a}]]
+  ]
+
+
+NumberFailures[R_, S_, a_, r_, f_, \[CapitalLambda]_, type_, nbanks_, 
+  z_, \[Beta]_, pop_] := With[
+  {LM = LendingMatrices[type, nbanks, z, \[Beta], pop]},
+  Mean[
+   Table[
+    Failures[Shock[ConstantArray[R, nbanks], S, a], r, f, \[CapitalLambda], 
+     LM[[net]]], {net, pop}]
+   ]
+  ]
+
+NumberFailuresAll[R_, S_, a_, r_, f_, \[CapitalLambda]_, type_, nbanks_, 
+  z_, \[Beta]_, pop_] := With[
+  {LM = LendingMatrices[type, nbanks, z, \[Beta], pop]},
+  Table[
+   Failures[Shock[ConstantArray[R, nbanks], S, a], r, f, \[CapitalLambda], 
+    LM[[net]]], {net, pop}]
+  ]
