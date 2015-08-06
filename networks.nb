@@ -1,0 +1,113 @@
+Degree distributions
+
+DegreeDistribution[type_, nbanks_, z_] := Which[
+  type === regular, KroneckerDelta[#, z] &,
+  type === ER, 
+  PDF[GraphPropertyDistribution[VertexDegree[g, 1], 
+    g \[Distributed] BernoulliGraphDistribution[nbanks, z/(nbanks - 1)]]],
+  type === BA, With[{m = z/2}, (2 m (m + 1))/(# (# + 1) (# + 2)) &]
+  ]
+
+ConditionalDegreeDistribution[type_, nbanks_, z_] := Which[
+  type === regular, KroneckerDelta[#, z] &,
+  type === 
+   ER, (#1/z) PDF[
+      GraphPropertyDistribution[VertexDegree[g, 1], 
+       g \[Distributed] 
+        BernoulliGraphDistribution[nbanks, z/(nbanks - 1)]]][#1] &,
+  type === BA, 
+  With[{m = z/2}, 
+   m/(#1 #2) ((#2 + 2)/(#1 + 1) - 
+       Binomial[2 m + 2, m + 1] Binomial[#1 + #2 - 2 m, #1 - m]/
+        Binomial[#1 + #2 + 2, #1]) &
+   ]
+  ]
+
+NumberofFirstNeighbors[type_, nbanks_, z_] := 
+ Sum[k DegreeDistribution[type, nbanks, z][k], {k, 
+   Which[type === regular, 1, type === ER, 1, type === BA, z/2], nbanks - 1}]
+
+NumberofSecondNeighbors1[type_, nbanks_, 
+  z_] := (1 - 
+    Mean[MeanClusteringCoefficient /@ Networks[type, nbanks, z, 100]]) Sum[
+   k (k1 - 1) DegreeDistribution[type, nbanks, z][
+     k] ConditionalDegreeDistribution[type, nbanks, z][k1, k], {k1, 
+    Which[type === regular, 1, type === ER, 1, type === BA, z/2], 
+    nbanks - 1}, {k, 
+    Which[type === regular, 1, type === ER, 1, type === BA, z/2], nbanks - 1}]
+
+
+NumberofSecondNeighbors2[type_, nbanks_, 
+  z_] := (1 - 
+     Mean[MeanClusteringCoefficient /@ Networks[type, nbanks, z, 100]]) Sum[
+    k^2 DegreeDistribution[type, nbanks, z][k], {k, 
+     Which[type === regular, 1, type === ER, 1, type === BA, z/2], 
+     nbanks - 1}] -
+  Sum[k DegreeDistribution[type, nbanks, z][k], {k, 
+    Which[type === regular, 1, type === ER, 1, type === BA, z/2], nbanks - 1}]
+
+Cayley trees
+
+auxseq[1] := 1;
+auxseq[2] := 2;
+auxseq[n_] := 2*auxseq[n - 1] + 1;
+
+auxseq1[1] := 1;
+auxseq1[2] := 2;
+auxseq1[n_] := 3*auxseq1[n - 1];
+
+auxseq2[1] := 1;
+auxseq2[2] := 2;
+auxseq2[n_] := 4*auxseq2[n - 1] - 1;
+
+auxseq3[1] := 1;
+auxseq3[2] := 2;
+auxseq3[n_] := 5*auxseq3[n - 1] - 2;
+CTree[n_, 1] := {}
+CTree[1, 2] := {1 -> 2, 1 -> 3}
+CTree[1, 3] := {1 -> 2, 1 -> 3, 1 -> 4}
+CTree[1, 4] := {1 -> 2, 1 -> 3, 1 -> 4, 1 -> 5}
+CTree[1, 5] := {1 -> 2, 1 -> 3, 1 -> 4, 1 -> 5, 1 -> 6}
+CTree[1, 6] := {1 -> 2, 1 -> 3, 1 -> 4, 1 -> 5, 1 -> 6, 1 -> 7}
+
+CTree[n_, 2] := 
+ Join[CTree[n - 1, 2], {2*(n - 1) -> 2*n, 2*(n - 1) + 1 -> 2*n + 1}]
+
+CTree[n_, 3] := 
+ Join[CTree[n - 1, 3], 
+  Flatten[Table[{i -> 2*i + 1, i -> 2*i + 2}, {i, auxseq[n], 
+     auxseq[n + 1] - 1}]]]
+
+CTree[n_, 4] := 
+ Join[CTree[n - 1, 4], 
+  Flatten[Table[{i -> 3*i, i -> 3*i + 1, i -> 3*i + 2}, {i, auxseq1[n], 
+     auxseq1[n + 1] - 1}]]]
+
+CTree[n_, 5] := 
+ Join[CTree[n - 1, 5], 
+  Flatten[Table[{i -> 4*i - 1, i -> 4*i, i -> 4*i + 1, i -> 4*i + 2}, {i, 
+     auxseq2[n], auxseq2[n + 1] - 1}]]]
+
+CTree[n_, 6] := 
+ Join[CTree[n - 1, 6], 
+  Flatten[Table[{i -> 5*i - 2, i -> 5*i - 1, i -> 5*i, i -> 5*i + 1, 
+     i -> 5*i + 2}, {i, auxseq3[n], auxseq3[n + 1] - 1}]]]
+
+
+
+Create random networks
+
+Create a population of pop networks with nbanks nodes.
+
+Networks[type_, nbanks_, z_, \[Beta]_, pop_] := Which[
+  type === ER, 
+  RandomGraph[BernoulliGraphDistribution[nbanks, z/(nbanks - 1)], pop],
+  type === BA, 
+  RandomGraph[BarabasiAlbertGraphDistribution[nbanks, z/2], pop],
+  type === regular, 
+  Table[RandomGraph[DegreeGraphDistribution[ConstantArray[z, nbanks]]], {pop}],
+  type === bethe,
+  Table[Graph[CTree[3, z], DirectedEdges -> False], {pop}],
+  type === WS,
+  RandomGraph[WattsStrogatzGraphDistribution[nbanks, \[Beta], z/2], pop]
+  ]
