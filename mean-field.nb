@@ -1,0 +1,19 @@
+MFCriticalDegree[R_, r_, f_, \[CapitalLambda]_] := (
+ r (1 - f) - 
+  Max[r (1 - f) + 2 \[CapitalLambda] - 1, 
+   0])/((R - 1) (1 - \[CapitalLambda]) + \[CapitalLambda])
+
+MFCriticalDegree2[R_, r_, f_, \[CapitalLambda]_] := 
+ 1/2 (Sqrt[
+     1 + (4 r (1 - 
+         f))/((R - 1) (1 - \[CapitalLambda]) + \[CapitalLambda])] - 1)
+
+
+MFsolution[R_, r_, f_, \[CapitalLambda]_, type_, nbanks_, z_] := 
+ Sum[k DegreeDistribution[type, nbanks, z][
+    k] ConditionalDegreeDistribution[type, nbanks, z][k1, k], {k1, 
+   Which[type === regular, 1, type === ER, 1, type === BA, z/2], 
+   MFCriticalDegree[R, r, f, \[CapitalLambda]]}, {k, 
+   Which[type === regular, 1, type === ER, 1, type === BA, z/2], 
+   nbanks - 1}]
+
