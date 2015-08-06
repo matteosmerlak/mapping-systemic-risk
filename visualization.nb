@@ -1,0 +1,14 @@
+VisualizeAttack[R_, S_, a_, r_, f_, \[CapitalLambda]_, type_, nbanks_,
+   z_, \[Beta]_] := 
+ With[{sh = Shock[ConstantArray[R, nbanks], S, a], 
+   nets = Networks[type, nbanks, z, \[Beta], 1][[1]]},
+  SetProperty[SetProperty[nets,
+    VertexStyle -> Table[i -> If[sh[[i]] == 0, Black, If[
+         Chop[
+             
+             NetWorth[sh, r, f, \[CapitalLambda], 
+              Transpose@AdjacencyMatrix[nets]]
+             ][[i]] <= 0 && VertexDegree[nets][[i]] > 0, Red, Green]]
+      , {i, nbanks}]
+    ], VertexSize -> .5]
+  ]
